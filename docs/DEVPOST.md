@@ -1,7 +1,7 @@
 # Devpost submission — draft (fill in / trim tomorrow)
 
 > Working draft for the DeveloperWeek New York 2026 Hackathon submission.
-> Live: **https://algorithm-reviews.vercel.app** · Repo: (public GitHub link)
+> Live: **https://algorithm-reviews.vercel.app** · Repo: https://github.com/OrionArchitekton/algorithm-reviews
 
 ---
 
@@ -147,7 +147,7 @@ The result reads like an audit, not a chatbot answer: a verdict you can defend.
 - Verify a receipt: `/verify` (includes a "Tamper with it" button)
 - Offline demo fixtures: `/demo/link-rot`, `/demo/nimble-best`, `/demo/claude-context`
 - Public key: `/api/pubkey`
-- Source: (public GitHub link)
+- Source: https://github.com/OrionArchitekton/algorithm-reviews
 
 ## Demo video script (60–90s)
 

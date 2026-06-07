@@ -15,6 +15,18 @@ challenges: **Overall**, **Nimble** (live web), **name.com Domain Roulette**
 
 ---
 
+## Screenshots
+
+A live review — the signed receipt plus the streaming admit/reject governance trace:
+
+![Live review with signed receipt and governance trace](docs/screenshots/algorithm-reviews-02-review.png)
+
+Tamper-evidence — flip one field and the ECDSA signature fails at `/verify`:
+
+![Receipt verification fails after tampering](docs/screenshots/algorithm-reviews-04-verify-tampered.png)
+
+---
+
 ## Why it exists
 
 AI answers and online reviews are **unauditable**: you can't tell a grounded
