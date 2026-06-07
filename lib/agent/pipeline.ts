@@ -15,6 +15,7 @@ import { classifySources } from "./classify";
 import { decomposeClaims } from "./decompose";
 import { admit, ageDays } from "./govern";
 import { modelLabel } from "./model";
+import { generateQueries } from "./queries";
 
 type Emit = (e: ReviewEvent) => void;
 
@@ -61,7 +62,7 @@ export async function runReview(
   for (const claim of claims) {
     emit({ type: "status", phase: "research", message: `Researching: ${truncate(claim.text, 60)}` });
 
-    const queries = buildQueries(claim.text);
+    const queries = await generateQueries(claim.text, mock);
     for (const q of queries) emit({ type: "query", claimId: claim.id, query: q });
 
     // Search (bounded concurrency), dedupe, cap candidates.
@@ -240,13 +241,6 @@ function computeOverall(reviews: ClaimReview[]): ReceiptCore["overall"] {
     reviews.reduce((s, r) => s + r.confidence, 0) / n;
   const summary = `${counts.supported} supported, ${counts.refuted} refuted, ${counts.unverifiable} unverifiable${counts.mixed ? `, ${counts.mixed} mixed` : ""} across ${reviews.length} claim${reviews.length === 1 ? "" : "s"}.`;
   return { verdict, confidence, summary };
-}
-
-function buildQueries(claim: string): string[] {
-  const base = claim.replace(/\s+/g, " ").trim();
-  const queries = [base];
-  if (CAPS.maxQueriesPerClaim > 1) queries.push(`${base} evidence OR fact check`);
-  return queries.slice(0, CAPS.maxQueriesPerClaim);
 }
 
 function dedupeByUrl(list: SourceCandidate[]): SourceCandidate[] {
