@@ -44,7 +44,8 @@ export class NimbleProvider implements WebProvider {
       timeoutMs: CAPS.webTimeoutMs,
       body: JSON.stringify({
         query,
-        search_depth: "fast",
+        // "lite" is the default/free tier; "fast"/"deep" require a paid plan.
+        search_depth: process.env.NIMBLE_SEARCH_DEPTH ?? "lite",
         max_results: opts?.maxResults ?? CAPS.maxCandidatesPerClaim,
         output_format: "markdown",
         country: "US",
