@@ -241,6 +241,33 @@ note above.
 9. **Guaranteed stage fallback** — a static receipt fixture committed to the repo,
    rendered by `/demo/[id]`. Zero external dependency; cannot rate-limit or 500.
 
+## Deployment reality (2026-06-06, shipped)
+
+Live: **https://algorithm-reviews.vercel.app** (Vercel team `dan-mercedes-projects`,
+public, no SSO gate). Verified end-to-end: a true claim → supported w/ citation, a
+false claim → refuted w/ citation, signed receipts verify, tampering fails.
+
+Env wired (encrypted on Vercel): `ANTHROPIC_API_KEY` (validated, real Opus/Haiku),
+`RECEIPT_SIGNING_JWK` (stable key — without it each serverless instance generated
+its own ephemeral key and cross-instance verification failed).
+
+Two reality-corrections from live validation:
+
+1. **Nimble key status — BLOCKED.** The Doppler `algo-reviews/prd` `NIMBLE_API_KEY`
+   (30 chars) is rejected by `sdk.nimbleway.com/v1/search`: `Bearer` → "malformed
+   JWT (invalid number of segments)", `x-api-key` → "Bad Credentials". Docs confirm
+   the scheme IS `Authorization: Bearer`, so the provider code is correct; the key
+   VALUE is invalid/inactive. Action: regenerate in the Nimble dashboard / confirm
+   trial activation. `NIMBLE_API_KEY` is intentionally NOT set on Vercel until valid.
+   Once valid → set it → Nimble becomes the premium primary provider AND the build
+   qualifies for the Nimble challenge.
+2. **General web search needs a keyed provider from a datacenter IP.** DuckDuckGo
+   HTML is blocked from Vercel's IP (0 results); `s.jina.ai` now needs a key. Added
+   the **keyless Wikipedia API** (full-article extracts) as the primary fallback
+   search/extract so live reviews produce real admitted sources today. Also wired
+   LLM **keyword query generation** (raw-sentence queries returned tangential junk
+   the policy correctly rejected). Nimble remains the broader-coverage upgrade.
+
 ## What I noticed about how you think
 
 - You delegated the *creativity* but kept the *decision* — "get creative and then
