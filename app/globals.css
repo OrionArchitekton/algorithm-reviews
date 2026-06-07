@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/*
+ * algorithm.reviews — "trust terminal" theme.
+ * Fixed dark palette (one consistent look for judges). Governance is the
+ * spectacle: admit=green, reject=red, the receipt is the artifact.
+ */
+:root {
+  --bg: #0a0b0f;
+  --bg-elev: #111319;
+  --bg-card: #14161d;
+  --border: #232734;
+  --border-strong: #2f3545;
+  --fg: #e7e9ee;
+  --fg-dim: #9aa1b1;
+  --fg-faint: #646b7d;
+  --admit: #3ddc84;
+  --admit-bg: #0f2a1c;
+  --reject: #ff5d5d;
+  --reject-bg: #2a1212;
+  --accent: #7c8cff;
+  --accent-bg: #171a2e;
+  --warn: #ffb74d;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-bg-card: var(--bg-card);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-dim: var(--fg-dim);
+  --color-fg-faint: var(--fg-faint);
+  --color-admit: var(--admit);
+  --color-reject: var(--reject);
+  --color-accent: var(--accent);
+  --color-warn: var(--warn);
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+/* subtle governance grid behind everything */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 50% -10%, #161a30 0%, transparent 55%),
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+  opacity: 0.5;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.pulse { animation: pulse-dot 1.1s ease-in-out infinite; }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-in { animation: slide-in 0.22s ease-out; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; }
+
+a { color: inherit; }
