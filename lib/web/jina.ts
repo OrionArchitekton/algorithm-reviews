@@ -186,20 +186,21 @@ export class JinaProvider implements WebProvider {
 
   private async extractWikipedia(url: string): Promise<ExtractedDoc> {
     const title = decodeURIComponent(url.split("/wiki/")[1] ?? "");
-    const u = `https://en.wikipedia.org/api/rest_v1/page/summary/${title}`;
+    // Full-article plaintext (not just the lead summary) so specific facts —
+    // heights, dates, statistics — are present in the admitted evidence.
+    const u = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&explaintext=1&redirects=1&titles=${encodeURIComponent(title)}&origin=*`;
     const res = await fetchWithTimeout(u, {
       headers: { "User-Agent": UA, Accept: "application/json" },
       timeoutMs: CAPS.webTimeoutMs,
     });
-    if (!res.ok) throw new Error(`wikipedia summary ${res.status}`);
+    if (!res.ok) throw new Error(`wikipedia extract ${res.status}`);
     const json = (await res.json()) as {
-      title?: string;
-      extract?: string;
-      timestamp?: string;
+      query?: { pages?: Record<string, { title?: string; extract?: string }> };
     };
+    const page = Object.values(json.query?.pages ?? {})[0];
     return {
       url,
-      markdown: `# ${json.title ?? title}\n\n${json.extract ?? ""}`,
+      markdown: `# ${page?.title ?? title}\n\n${(page?.extract ?? "").slice(0, 6000)}`,
       fetchedAt: new Date().toISOString(),
       status: res.status,
     };
