@@ -14,8 +14,11 @@ import {
  *  - search:  s.jina.ai now requires a key (401 keyless, verified 2026-06-06),
  *             so without JINA_API_KEY we fall back to DuckDuckGo HTML parsing.
  */
+const UA =
+  "algorithm.reviews/1.0 (https://algorithm.reviews; fact-checking agent)";
+
 export class JinaProvider implements WebProvider {
-  readonly name = "jina";
+  readonly name = "web-fallback";
   constructor(private readonly jinaKey?: string) {}
 
   async search(
@@ -23,10 +26,56 @@ export class JinaProvider implements WebProvider {
     opts?: { maxResults?: number },
   ): Promise<SourceCandidate[]> {
     const max = opts?.maxResults ?? CAPS.maxCandidatesPerClaim;
-    if (this.jinaKey) {
-      return this.searchJina(query, max);
+    const results: SourceCandidate[] = [];
+    // Wikipedia first: keyless, real, and (unlike DuckDuckGo) reliably reachable
+    // from a serverless datacenter IP.
+    try {
+      results.push(...(await this.searchWikipedia(query, max)));
+    } catch {
+      /* continue to broader web */
     }
-    return this.searchDuckDuckGo(query, max);
+    // Broader web: Jina search if a key is present, else best-effort DuckDuckGo.
+    if (results.length < max) {
+      try {
+        const more = this.jinaKey
+          ? await this.searchJina(query, max)
+          : await this.searchDuckDuckGo(query, max);
+        results.push(...more);
+      } catch {
+        /* Wikipedia results (if any) still stand */
+      }
+    }
+    // de-dupe by normalized url
+    const seen = new Set<string>();
+    return results
+      .filter((r) => {
+        const k = r.url.replace(/[#?].*$/, "").replace(/\/$/, "");
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, max);
+  }
+
+  private async searchWikipedia(
+    query: string,
+    max: number,
+  ): Promise<SourceCandidate[]> {
+    const u = `https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(query)}&srlimit=${max}&srprop=snippet|timestamp&origin=*`;
+    const res = await fetchWithTimeout(u, {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      timeoutMs: CAPS.webTimeoutMs,
+    });
+    if (!res.ok) throw new Error(`wikipedia search ${res.status}`);
+    const json = (await res.json()) as {
+      query?: { search?: Array<{ title: string; snippet?: string; timestamp?: string }> };
+    };
+    return (json.query?.search ?? []).map((r) => ({
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, "_"))}`,
+      title: r.title,
+      snippet: stripTags(r.snippet ?? "").slice(0, 600),
+      publishedAt: normalizeDate(r.timestamp),
+    }));
   }
 
   private async searchJina(
@@ -111,19 +160,46 @@ export class JinaProvider implements WebProvider {
   }
 
   async extract(url: string): Promise<ExtractedDoc> {
-    const headers: Record<string, string> = {
-      "X-Return-Format": "markdown",
-    };
+    // Wikipedia REST summary is fast, keyless, and reliable from a datacenter.
+    if (/(^|\.)wikipedia\.org$/i.test(safeHost(url)) && url.includes("/wiki/")) {
+      try {
+        return await this.extractWikipedia(url);
+      } catch {
+        /* fall through to the general reader */
+      }
+    }
+    const headers: Record<string, string> = { "X-Return-Format": "markdown" };
     if (this.jinaKey) headers.Authorization = `Bearer ${this.jinaKey}`;
-    const res = await fetchWithTimeout(
-      `https://r.jina.ai/${url}`,
-      { headers, timeoutMs: CAPS.webTimeoutMs },
-    );
+    const res = await fetchWithTimeout(`https://r.jina.ai/${url}`, {
+      headers,
+      timeoutMs: CAPS.webTimeoutMs,
+    });
     if (!res.ok) throw new Error(`jina reader ${res.status}`);
     const markdown = await res.text();
     return {
       url,
       markdown,
+      fetchedAt: new Date().toISOString(),
+      status: res.status,
+    };
+  }
+
+  private async extractWikipedia(url: string): Promise<ExtractedDoc> {
+    const title = decodeURIComponent(url.split("/wiki/")[1] ?? "");
+    const u = `https://en.wikipedia.org/api/rest_v1/page/summary/${title}`;
+    const res = await fetchWithTimeout(u, {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      timeoutMs: CAPS.webTimeoutMs,
+    });
+    if (!res.ok) throw new Error(`wikipedia summary ${res.status}`);
+    const json = (await res.json()) as {
+      title?: string;
+      extract?: string;
+      timestamp?: string;
+    };
+    return {
+      url,
+      markdown: `# ${json.title ?? title}\n\n${json.extract ?? ""}`,
       fetchedAt: new Date().toISOString(),
       status: res.status,
     };
@@ -160,4 +236,12 @@ function normalizeDate(d?: string): string | null {
   if (!d) return null;
   const t = Date.parse(d);
   return Number.isNaN(t) ? null : new Date(t).toISOString();
+}
+
+function safeHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
 }
