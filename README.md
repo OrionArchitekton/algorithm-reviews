@@ -183,7 +183,7 @@ lib/web/    swappable WebProvider (nimble, jina, mock) + fallback wiring
 lib/receipt/ canonicalization + ECDSA signing/verification
 lib/fixtures/ offline demo inputs
 scripts/    gen-key.mjs — ECDSA signing key generator
-tests/      vitest suites (governance, receipt, reduce)
+tests/      vitest suites (governance, receipt, reducer)
 docs/       DESIGN.md and screenshots
 ```
 
