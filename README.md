@@ -1,5 +1,7 @@
 # algorithm.reviews — The Agent Trust Layer
 
+![TypeScript](https://img.shields.io/badge/TypeScript-1a1a1a?style=flat&logo=typescript&logoColor=3178C6)
+
 **An algorithm that reviews — and whose reviewing is itself reviewable.**
 
 Live: <https://algorithm-reviews.vercel.app> · Try it with zero setup at
